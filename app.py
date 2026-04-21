@@ -35,25 +35,14 @@ st.set_page_config(
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Main background */
+    /* Custom CSS */
     .stApp { background: #0f1117; }
     
-    /* Sidebar */
     [data-testid="stSidebar"] {
         background: #161b27;
         border-right: 1px solid #2a3040;
     }
     
-    /* Cards */
-    .metric-card {
-        background: #1e2535;
-        border: 1px solid #2a3a55;
-        border-radius: 10px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-    }
-    
-    /* Section headers */
     .section-header {
         color: #58a6ff;
         font-size: 0.85rem;
@@ -63,9 +52,9 @@ st.markdown("""
         border-bottom: 1px solid #2a3a55;
         padding-bottom: 6px;
         margin-bottom: 12px;
+        margin-top: 16px;
     }
 
-    /* Download buttons */
     .stDownloadButton > button {
         background: linear-gradient(135deg, #1f6feb, #0d4a99);
         color: white;
@@ -82,50 +71,18 @@ st.markdown("""
         transform: translateY(-1px);
         box-shadow: 0 4px 20px rgba(31,111,235,0.4);
     }
-
-    /* Number inputs */
-    .stNumberInput input {
+    
+    /* Inputs */
+    .stNumberInput input, .stSelectbox > div > div {
         background: #1e2535 !important;
         color: #e6edf3 !important;
         border: 1px solid #2a3a55 !important;
         border-radius: 6px !important;
     }
-
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        background: #1e2535;
-        border-radius: 8px;
-        padding: 4px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        color: #8b949e;
-        border-radius: 6px;
-        font-weight: 600;
-    }
-    .stTabs [aria-selected="true"] {
-        background: #1f6feb !important;
-        color: white !important;
-    }
-
-    /* Titles */
-    h1 { color: #e6edf3 !important; }
-    h2 { color: #cdd9e5 !important; }
-    h3 { color: #adbac7 !important; }
     
-    /* Selectbox */
-    .stSelectbox label { color: #8b949e !important; }
-    
-    /* Radio */
-    .stRadio label { color: #8b949e !important; }
-    
-    /* Info box */
+    h1, h2, h3 { color: #e6edf3 !important; }
+    .stRadio label, .stSelectbox label, .stSlider label { color: #8b949e !important; }
     .stInfo { background: #1c2d3f; border-color: #1f6feb; }
-    
-    /* Success box */
-    .stSuccess { background: #122218; border-color: #2ea04c; }
-    
-    /* Warning box */
-    .stWarning { background: #2a1f0a; border-color: #d29922; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -343,7 +300,7 @@ def make_slider_gif(r, l, omega, fps=30, duration_cycles=2):
 
 
 # ─────────────────────────────────────────────
-# Sidebar — mechanism selector + downloads
+# Sidebar — mechanism selector + generic settings
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## ⚙ Kinematics Visualizer")
@@ -356,29 +313,39 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown('<div class="section-header">📥 Downloads</div>', unsafe_allow_html=True)
-
-    # Read files for download
-    with open(__file__, "rb") as f:
-        app_bytes = f.read()
-    with open("four_bar.py", "rb") as f:
-        fb_bytes = f.read()
-    with open("slider_crank.py", "rb") as f:
-        sc_bytes = f.read()
-
-    st.download_button("⬇ Download four_bar.py",   data=fb_bytes,   file_name="four_bar.py",   mime="text/plain")
-    st.download_button("⬇ Download slider_crank.py", data=sc_bytes, file_name="slider_crank.py", mime="text/plain")
-    st.download_button("⬇ Download app.py (project)", data=app_bytes, file_name="app.py",       mime="text/plain")
-
-    st.markdown("---")
-    st.caption("ME223 — Group Project | Kinematic Analysis Tool")
-
+    
+    # We will populate mechanism-specific inputs here inside the condition blocks
+    input_container = st.container()
 
 # ─────────────────────────────────────────────
-# Page title
+# Top Right Header & Page title
 # ─────────────────────────────────────────────
-st.title("🔧 Mechanisms Kinematic Analysis Visualizer")
-st.markdown("Visualize and analyse **Four-Bar** and **Slider-Crank** mechanisms in real time.")
+col_img, col_t, col_dn = st.columns([1, 6, 2])
+with col_t:
+    st.title("🔧 Mechanisms Kinematic Analysis")
+    st.markdown("Visualize and analyze **Four-Bar** and **Slider-Crank** mechanisms.")
+
+with col_dn:
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.expander("📥 Downloads"):
+        # Read files for download
+        with open(__file__, "rb") as f:
+            app_bytes = f.read()
+        try:
+            with open("four_bar.py", "rb") as f:
+                fb_bytes = f.read()
+        except:
+            fb_bytes = b""
+        try:
+            with open("slider_crank.py", "rb") as f:
+                sc_bytes = f.read()
+        except:
+            sc_bytes = b""
+
+        st.download_button("⬇ four_bar.py",   data=fb_bytes,   file_name="four_bar.py",   mime="text/plain")
+        st.download_button("⬇ slider_crank.py", data=sc_bytes, file_name="slider_crank.py", mime="text/plain")
+        st.download_button("⬇ app.py", data=app_bytes, file_name="app.py", mime="text/plain")
+
 st.markdown("---")
 
 
@@ -386,17 +353,14 @@ st.markdown("---")
 #  FOUR-BAR MECHANISM
 # ═════════════════════════════════════════════
 if mechanism == "Four-Bar Mechanism":
-    st.header("🔗 Four-Bar Mechanism")
 
-    left, right = st.columns([1, 3], gap="large")
-
-    # ── LEFT PANEL ─────────────────────────────────────────
-    with left:
+    # ── SIDEBAR PANEL ─────────────────────────────────────────
+    with st.sidebar:
         st.markdown('<div class="section-header">🔩 Link Lengths</div>', unsafe_allow_html=True)
-        L1 = st.number_input("Fixed link L1 (m)",   value=2.0, min_value=0.1, step=0.1, key="fb_L1")
-        L2 = st.number_input("Crank L2 (m)",        value=0.5, min_value=0.1, step=0.1, key="fb_L2")
-        L3 = st.number_input("Coupler L3 (m)",      value=2.0, min_value=0.1, step=0.1, key="fb_L3")
-        L4 = st.number_input("Follower L4 (m)",     value=2.0, min_value=0.1, step=0.1, key="fb_L4")
+        L1 = st.slider("Fixed link L1 (m)", 0.1, 10.0, 2.0, 0.1, key="fb_L1")
+        L2 = st.slider("Crank L2 (m)", 0.1, 10.0, 0.5, 0.1, key="fb_L2")
+        L3 = st.slider("Coupler L3 (m)", 0.1, 10.0, 2.0, 0.1, key="fb_L3")
+        L4 = st.slider("Follower L4 (m)", 0.1, 10.0, 2.0, 0.1, key="fb_L4")
 
         st.markdown('<div class="section-header" style="margin-top:16px">⚡ Kinematic Parameters</div>', unsafe_allow_html=True)
         omega2 = st.number_input("Crank ω₂ (rad/s)", value=5.0, min_value=0.1, step=0.5, key="fb_w2")
@@ -411,8 +375,7 @@ if mechanism == "Four-Bar Mechanism":
         st.markdown('<div class="section-header" style="margin-top:16px">🎬 Animation</div>', unsafe_allow_html=True)
         anim_fps    = st.slider("Animation FPS", 5, 30, 15, key="fb_fps")
         anim_cycles = st.slider("Cycles to preview", 1, 5, 2, key="fb_cyc")
-        run_anim    = st.button("▶ Generate Animation", type="primary", key="fb_anim_btn")
-
+        
         # Grashof check
         links = sorted([L1, L2, L3, L4])
         grashof = (links[0] + links[3]) <= (links[1] + links[2])
@@ -421,115 +384,105 @@ if mechanism == "Four-Bar Mechanism":
         else:
             st.warning("Grashof: ✗ NOT SATISFIED")
 
-    # ── RIGHT PANEL ────────────────────────────────────────
-    with right:
-        # Compute kinematic data
-        thetas  = np.arange(start_angle, end_angle + 1e-9, step)
-        results = []
-        errors  = []
+    # Compute kinematic data
+    thetas  = np.arange(start_angle, end_angle + 1e-9, step)
+    results = []
+    errors  = []
 
-        for t in thetas:
-            try:
-                t3d, t4d, w3, w4, a3, a4 = four_bar_kinematics(
-                    L1, L2, L3, L4, omega2, t, assembly)
-                results.append({
-                    "θ₂ (°)": t, "θ₃ (°)": t3d, "θ₄ (°)": t4d,
-                    "ω₃ (rad/s)": w3, "ω₄ (rad/s)": w4,
-                    "α₃ (rad/s²)": a3, "α₄ (rad/s²)": a4
-                })
-            except Exception as e:
-                errors.append(f"θ₂={t}°: {str(e)}")
+    for t in thetas:
+        try:
+            t3d, t4d, w3, w4, a3, a4 = four_bar_kinematics(
+                L1, L2, L3, L4, omega2, t, assembly)
+            results.append({
+                "θ₂ (°)": t, "θ₃ (°)": t3d, "θ₄ (°)": t4d,
+                "ω₃ (rad/s)": w3, "ω₄ (rad/s)": w4,
+                "α₃ (rad/s²)": a3, "α₄ (rad/s²)": a4
+            })
+        except Exception as e:
+            errors.append(f"θ₂={t}°: {str(e)}")
 
-        tab_anim, tab_plots, tab_table = st.tabs(["🎬 Animation", "📊 Plots", "📋 Data Table"])
+    # ── ANIMATION ───────────────────────────────
+    st.markdown('<div class="section-header">🎬 Animation</div>', unsafe_allow_html=True)
+    with st.spinner("Rendering animation... (this may take a few seconds)"):
+        gif_data = make_fourbar_gif(L1, L2, L3, L4, omega2, assembly,
+                                    fps=anim_fps, duration_cycles=anim_cycles)
+    if gif_data:
+        col_img, col_info = st.columns([2, 1])
+        with col_img:
+            st.image(gif_data, caption="Four-Bar Mechanism Animation", use_container_width=True)
+        with col_info:
+            st.download_button("⬇ Save animation as GIF", data=gif_data,
+                               file_name="four_bar_animation.gif", mime="image/gif")
+            # Snapshot
+            snap_angle = 45
+            O2, A, B, O4, ok = fourbar_joints(L1, L2, L3, L4, snap_angle, assembly)
+            if ok:
+                fig_s, ax_s = plt.subplots(figsize=(4, 3))
+                fig_s.patch.set_facecolor("#0f1117")
+                ax_s.set_facecolor("#0f1117")
+                for spine in ax_s.spines.values(): spine.set_color("#2a3a55")
+                ax_s.tick_params(colors="#8b949e")
+                ax_s.grid(True, color="#1e2535", linewidth=0.8)
+                ax_s.set_aspect("equal")
+                xs = lambda *pts: [p[0] for p in pts]
+                ys = lambda *pts: [p[1] for p in pts]
+                ax_s.plot(xs(O2, O4), ys(O2, O4), color="#6b7280", lw=2.5, label=f"Ground L1={L1}m")
+                ax_s.plot(xs(O2, A),  ys(O2, A),  color="#3b82f6", lw=3.5, label=f"Crank L2={L2}m")
+                ax_s.plot(xs(A, B),   ys(A, B),   color="#f59e0b", lw=3.5, label=f"Coupler L3={L3}m")
+                ax_s.plot(xs(B, O4),  ys(B, O4),  color="#10b981", lw=3.5, label=f"Follower L4={L4}m")
+                ax_s.plot(*zip(O2, O4), "^r", ms=9, zorder=6)
+                ax_s.plot(*zip(A, B),   "ow", ms=7, zorder=5)
+                ax_s.set_title(f"Snapshot at θ₂={snap_angle}°", color="#e6edf3", fontsize=9)
+                ax_s.set_xlabel("x (m)", color="#8b949e", fontsize=7)
+                ax_s.set_ylabel("y (m)", color="#8b949e", fontsize=7)
+                st.pyplot(fig_s)
+                plt.close(fig_s)
+    else:
+        st.error("Could not render animation. Check link lengths / Grashof condition.")
 
-        # ── ANIMATION TAB ───────────────────────────────
-        with tab_anim:
-            if run_anim:
-                with st.spinner("Rendering animation... (this may take a few seconds)"):
-                    gif_data = make_fourbar_gif(L1, L2, L3, L4, omega2, assembly,
-                                                fps=anim_fps, duration_cycles=anim_cycles)
-                if gif_data:
-                    st.image(gif_data, caption="Four-Bar Mechanism — Continuous Animation",
-                             use_container_width=True)
-                    st.download_button("⬇ Save animation as GIF", data=gif_data,
-                                       file_name="four_bar_animation.gif", mime="image/gif")
-                else:
-                    st.error("Could not render animation. Check link lengths / Grashof condition.")
-            else:
-                st.info("👈 Configure parameters on the left panel, then click **▶ Generate Animation**.")
+    # ── PLOTS ────────────────────────────────────
+    st.markdown('<div class="section-header">📊 Analysis Graphs</div>', unsafe_allow_html=True)
+    if len(results) > 0:
+        df = pd.DataFrame(results)
+        graph_choice = st.radio("Select variable to plot:", 
+                                ["Angles (θ₃, θ₄)", "Velocities (ω₃, ω₄)", "Accelerations (α₃, α₄)"],
+                                horizontal=True)
+        if "Angles" in graph_choice:
+            st.line_chart(df.set_index("θ₂ (°)")[["θ₃ (°)", "θ₄ (°)"]])
+        elif "Velocities" in graph_choice:
+            st.line_chart(df.set_index("θ₂ (°)")[["ω₃ (rad/s)", "ω₄ (rad/s)"]])
+        else:
+            st.line_chart(df.set_index("θ₂ (°)")[["α₃ (rad/s²)", "α₄ (rad/s²)"]])
+    else:
+        st.warning("No valid results — adjust link lengths or angle range.")
 
-                # Static snapshot at θ₂=45°
-                snap_angle = 45
-                O2, A, B, O4, ok = fourbar_joints(L1, L2, L3, L4, snap_angle, assembly)
-                if ok:
-                    fig_s, ax_s = plt.subplots(figsize=(5, 4))
-                    fig_s.patch.set_facecolor("#0f1117")
-                    ax_s.set_facecolor("#0f1117")
-                    for spine in ax_s.spines.values(): spine.set_color("#2a3a55")
-                    ax_s.tick_params(colors="#8b949e")
-                    ax_s.grid(True, color="#1e2535", linewidth=0.8)
-                    ax_s.set_aspect("equal")
-                    xs = lambda *pts: [p[0] for p in pts]
-                    ys = lambda *pts: [p[1] for p in pts]
-                    ax_s.plot(xs(O2, O4), ys(O2, O4), color="#6b7280", lw=2.5, label=f"Ground L1={L1}m")
-                    ax_s.plot(xs(O2, A),  ys(O2, A),  color="#3b82f6", lw=3.5, label=f"Crank L2={L2}m")
-                    ax_s.plot(xs(A, B),   ys(A, B),   color="#f59e0b", lw=3.5, label=f"Coupler L3={L3}m")
-                    ax_s.plot(xs(B, O4),  ys(B, O4),  color="#10b981", lw=3.5, label=f"Follower L4={L4}m")
-                    ax_s.plot(*zip(O2, O4), "^r", ms=9, zorder=6)
-                    ax_s.plot(*zip(A, B),   "ow", ms=7, zorder=5)
-                    ax_s.set_title(f"Snapshot at θ₂={snap_angle}°", color="#e6edf3", fontsize=10)
-                    ax_s.legend(facecolor="#1e2535", edgecolor="#2a3a55",
-                                labelcolor="#e6edf3", fontsize=7)
-                    ax_s.set_xlabel("x (m)", color="#8b949e")
-                    ax_s.set_ylabel("y (m)", color="#8b949e")
-                    st.pyplot(fig_s)
-                    plt.close(fig_s)
+    # ── DATA TABLE ───────────────────────────────
+    st.markdown('<div class="section-header">📋 Complete Data Table</div>', unsafe_allow_html=True)
+    if len(results) > 0:
+        df = pd.DataFrame(results)
+        st.dataframe(df.style.format("{:.4f}"), use_container_width=True)
 
-        # ── PLOTS TAB ────────────────────────────────────
-        with tab_plots:
-            if len(results) > 0:
-                df = pd.DataFrame(results)
-                ptab1, ptab2, ptab3 = st.tabs(["Angles (θ₃, θ₄)", "Velocities (ω₃, ω₄)", "Accelerations (α₃, α₄)"])
-                with ptab1:
-                    st.line_chart(df.set_index("θ₂ (°)")[["θ₃ (°)", "θ₄ (°)"]])
-                with ptab2:
-                    st.line_chart(df.set_index("θ₂ (°)")[["ω₃ (rad/s)", "ω₄ (rad/s)"]])
-                with ptab3:
-                    st.line_chart(df.set_index("θ₂ (°)")[["α₃ (rad/s²)", "α₄ (rad/s²)"]])
-            else:
-                st.warning("No valid results — adjust link lengths or angle range.")
+        csv = df.to_csv(index=False).encode()
+        st.download_button("⬇ Export as CSV", data=csv, file_name="four_bar_data.csv", mime="text/csv")
+    else:
+        st.warning("No data to display.")
 
-        # ── DATA TABLE TAB ───────────────────────────────
-        with tab_table:
-            if len(results) > 0:
-                df = pd.DataFrame(results)
-                st.dataframe(df.style.format("{:.4f}"), use_container_width=True)
-
-                csv = df.to_csv(index=False).encode()
-                st.download_button("⬇ Export as CSV", data=csv,
-                                   file_name="four_bar_data.csv", mime="text/csv")
-            else:
-                st.warning("No data to display.")
-
-            if errors:
-                with st.expander("⚠ Skipped angles"):
-                    for e in errors:
-                        st.warning(e)
+    if errors:
+        with st.expander("⚠ Skipped angles (Unreachable geometry)"):
+            for e in errors:
+                st.warning(e)
 
 
 # ═════════════════════════════════════════════
 #  SLIDER-CRANK MECHANISM
 # ═════════════════════════════════════════════
 elif mechanism == "Slider-Crank Mechanism":
-    st.header("🔄 Slider-Crank Mechanism")
 
-    left, right = st.columns([1, 3], gap="large")
-
-    # ── LEFT PANEL ─────────────────────────────────────────
-    with left:
+    # ── SIDEBAR PANEL ─────────────────────────────────────────
+    with st.sidebar:
         st.markdown('<div class="section-header">🔩 Link Lengths</div>', unsafe_allow_html=True)
-        r = st.number_input("Crank length r (m)",        value=0.5, min_value=0.01, step=0.05, key="sc_r")
-        l = st.number_input("Connecting-rod length l (m)", value=2.0, min_value=0.01, step=0.1,  key="sc_l")
+        r = st.slider("Crank length r (m)", 0.05, 5.0, 0.5, 0.05, key="sc_r")
+        l = st.slider("Connecting-rod length l (m)", 0.1, 10.0, 2.0, 0.1, key="sc_l")
 
         st.markdown('<div class="section-header" style="margin-top:16px">⚡ Kinematic Parameters</div>', unsafe_allow_html=True)
         omega = st.number_input("Crank ω (rad/s)", value=5.0, min_value=0.1, step=0.5, key="sc_w")
@@ -542,7 +495,6 @@ elif mechanism == "Slider-Crank Mechanism":
         st.markdown('<div class="section-header" style="margin-top:16px">🎬 Animation</div>', unsafe_allow_html=True)
         anim_fps    = st.slider("Animation FPS", 5, 30, 15, key="sc_fps")
         anim_cycles = st.slider("Cycles to preview", 1, 5, 2, key="sc_cyc")
-        run_anim    = st.button("▶ Generate Animation", type="primary", key="sc_anim_btn")
 
         # Geometry check
         if r < l:
@@ -550,97 +502,89 @@ elif mechanism == "Slider-Crank Mechanism":
         else:
             st.warning("Geometry: ⚠ r ≥ l — may cause singularities")
 
-    # ── RIGHT PANEL ────────────────────────────────────────
-    with right:
-        thetas  = np.arange(start_angle, end_angle + 1e-9, step)
-        results = []
-        errors  = []
+    thetas  = np.arange(start_angle, end_angle + 1e-9, step)
+    results = []
+    errors  = []
 
-        for t in thetas:
-            try:
-                phi, w2, a2, vs, a_s = slider_crank_kinematics(r, l, omega, t)
-                results.append({
-                    "θ (°)": t, "φ (°)": phi,
-                    "ω₂ (rad/s)": w2, "α₂ (rad/s²)": a2,
-                    "vₛ (m/s)": vs, "aₛ (m/s²)": a_s
-                })
-            except Exception as e:
-                errors.append(f"θ={t}°: {str(e)}")
+    for t in thetas:
+        try:
+            phi, w2, a2, vs, a_s = slider_crank_kinematics(r, l, omega, t)
+            results.append({
+                "θ (°)": t, "φ (°)": phi,
+                "ω₂ (rad/s)": w2, "α₂ (rad/s²)": a2,
+                "vₛ (m/s)": vs, "aₛ (m/s²)": a_s
+            })
+        except Exception as e:
+            errors.append(f"θ={t}°: {str(e)}")
 
-        tab_anim, tab_plots, tab_table = st.tabs(["🎬 Animation", "📊 Plots", "📋 Data Table"])
+    # ── ANIMATION ───────────────────────────────
+    st.markdown('<div class="section-header">🎬 Animation</div>', unsafe_allow_html=True)
+    with st.spinner("Rendering animation... (this may take a few seconds)"):
+        gif_data = make_slider_gif(r, l, omega,
+                                   fps=anim_fps, duration_cycles=anim_cycles)
+    if gif_data:
+        col_img, col_info = st.columns([2, 1])
+        with col_img:
+            st.image(gif_data, caption="Slider-Crank Mechanism Animation", use_container_width=True)
+        with col_info:
+            st.download_button("⬇ Save animation as GIF", data=gif_data,
+                               file_name="slider_crank_animation.gif", mime="image/gif")
+            # Snapshot
+            snap_angle = 45
+            O, A, B, ok = slider_joints(r, l, snap_angle)
+            if ok:
+                fig_s, ax_s = plt.subplots(figsize=(4, 2.5))
+                fig_s.patch.set_facecolor("#0f1117")
+                ax_s.set_facecolor("#0f1117")
+                for spine in ax_s.spines.values(): spine.set_color("#2a3a55")
+                ax_s.tick_params(colors="#8b949e")
+                ax_s.grid(True, color="#1e2535", linewidth=0.8)
+                ax_s.axhline(0, color="#2a3a55", lw=1.5, linestyle="--")
+                xs = lambda *pts: [p[0] for p in pts]
+                ys = lambda *pts: [p[1] for p in pts]
+                ax_s.plot(xs(O, A), ys(O, A), color="#3b82f6", lw=3.5, label=f"Crank r={r}m")
+                ax_s.plot(xs(A, B), ys(A, B), color="#f59e0b", lw=3.5, label=f"Rod l={l}m")
+                slider = plt.Rectangle((B[0]-0.12, -0.09), 0.24, 0.18, color="#10b981", label="Slider", zorder=5)
+                ax_s.add_patch(slider)
+                ax_s.plot([O[0]], [O[1]], "^r", ms=9, zorder=6)
+                ax_s.plot([A[0]], [A[1]], "ow", ms=7, zorder=5)
+                ax_s.set_aspect("equal")
+                ax_s.set_title(f"Snapshot at θ={snap_angle}°", color="#e6edf3", fontsize=9)
+                ax_s.set_xlabel("x (m)", color="#8b949e", fontsize=7)
+                ax_s.set_ylabel("y (m)", color="#8b949e", fontsize=7)
+                st.pyplot(fig_s)
+                plt.close(fig_s)
+    else:
+        st.error("Could not render animation. Check geometry (r must be < l).")
 
-        # ── ANIMATION TAB ───────────────────────────────
-        with tab_anim:
-            if run_anim:
-                with st.spinner("Rendering animation... (this may take a few seconds)"):
-                    gif_data = make_slider_gif(r, l, omega,
-                                               fps=anim_fps, duration_cycles=anim_cycles)
-                if gif_data:
-                    st.image(gif_data, caption="Slider-Crank Mechanism — Continuous Animation",
-                             use_container_width=True)
-                    st.download_button("⬇ Save animation as GIF", data=gif_data,
-                                       file_name="slider_crank_animation.gif", mime="image/gif")
-                else:
-                    st.error("Could not render animation. Check geometry (r must be < l).")
-            else:
-                st.info("👈 Configure parameters on the left panel, then click **▶ Generate Animation**.")
+    # ── PLOTS ────────────────────────────────────
+    st.markdown('<div class="section-header">📊 Analysis Graphs</div>', unsafe_allow_html=True)
+    if len(results) > 0:
+        df = pd.DataFrame(results)
+        graph_choice = st.radio("Select variable to plot:", 
+                                ["Angle & Rod Velocity", "Rod Acceleration", "Slider Vel & Accel"], 
+                                horizontal=True)
+        if "Velocity" in graph_choice:
+            st.line_chart(df.set_index("θ (°)")[["φ (°)", "ω₂ (rad/s)"]])
+        elif "Acceleration" in graph_choice and "Rod" in graph_choice:
+            st.line_chart(df.set_index("θ (°)")[["α₂ (rad/s²)"]])
+        else:
+            st.line_chart(df.set_index("θ (°)")[["vₛ (m/s)", "aₛ (m/s²)"]])
+    else:
+        st.warning("No valid results — adjust parameters.")
 
-                # Static snapshot
-                snap_angle = 45
-                O, A, B, ok = slider_joints(r, l, snap_angle)
-                if ok:
-                    fig_s, ax_s = plt.subplots(figsize=(6, 3.5))
-                    fig_s.patch.set_facecolor("#0f1117")
-                    ax_s.set_facecolor("#0f1117")
-                    for spine in ax_s.spines.values(): spine.set_color("#2a3a55")
-                    ax_s.tick_params(colors="#8b949e")
-                    ax_s.grid(True, color="#1e2535", linewidth=0.8)
-                    ax_s.axhline(0, color="#2a3a55", lw=1.5, linestyle="--")
-                    xs = lambda *pts: [p[0] for p in pts]
-                    ys = lambda *pts: [p[1] for p in pts]
-                    ax_s.plot(xs(O, A), ys(O, A), color="#3b82f6", lw=3.5, label=f"Crank r={r}m")
-                    ax_s.plot(xs(A, B), ys(A, B), color="#f59e0b", lw=3.5, label=f"Rod l={l}m")
-                    slider = plt.Rectangle((B[0]-0.12, -0.09), 0.24, 0.18,
-                                           color="#10b981", label="Slider", zorder=5)
-                    ax_s.add_patch(slider)
-                    ax_s.plot([O[0]], [O[1]], "^r", ms=9, zorder=6)
-                    ax_s.plot([A[0]], [A[1]], "ow", ms=7, zorder=5)
-                    ax_s.set_aspect("equal")
-                    ax_s.set_title(f"Snapshot at θ={snap_angle}°", color="#e6edf3", fontsize=10)
-                    ax_s.legend(facecolor="#1e2535", edgecolor="#2a3a55",
-                                labelcolor="#e6edf3", fontsize=7)
-                    ax_s.set_xlabel("x (m)", color="#8b949e")
-                    ax_s.set_ylabel("y (m)", color="#8b949e")
-                    st.pyplot(fig_s)
-                    plt.close(fig_s)
+    # ── DATA TABLE ───────────────────────────────
+    st.markdown('<div class="section-header">📋 Complete Data Table</div>', unsafe_allow_html=True)
+    if len(results) > 0:
+        df = pd.DataFrame(results)
+        st.dataframe(df.style.format("{:.4f}"), use_container_width=True)
 
-        # ── PLOTS TAB ────────────────────────────────────
-        with tab_plots:
-            if len(results) > 0:
-                df = pd.DataFrame(results)
-                ptab1, ptab2, ptab3 = st.tabs(["Angle & Rod Velocity", "Rod Acceleration", "Slider Vel & Accel"])
-                with ptab1:
-                    st.line_chart(df.set_index("θ (°)")[["φ (°)", "ω₂ (rad/s)"]])
-                with ptab2:
-                    st.line_chart(df.set_index("θ (°)")[["α₂ (rad/s²)"]])
-                with ptab3:
-                    st.line_chart(df.set_index("θ (°)")[["vₛ (m/s)", "aₛ (m/s²)"]])
-            else:
-                st.warning("No valid results — adjust parameters.")
+        csv = df.to_csv(index=False).encode()
+        st.download_button("⬇ Export as CSV", data=csv, file_name="slider_crank_data.csv", mime="text/csv")
+    else:
+        st.warning("No data to display.")
 
-        # ── DATA TABLE TAB ───────────────────────────────
-        with tab_table:
-            if len(results) > 0:
-                df = pd.DataFrame(results)
-                st.dataframe(df.style.format("{:.4f}"), use_container_width=True)
-
-                csv = df.to_csv(index=False).encode()
-                st.download_button("⬇ Export as CSV", data=csv,
-                                   file_name="slider_crank_data.csv", mime="text/csv")
-            else:
-                st.warning("No data to display.")
-
-            if errors:
-                with st.expander("⚠ Skipped angles"):
-                    for e in errors:
-                        st.warning(e)
+    if errors:
+        with st.expander("⚠ Skipped angles"):
+            for e in errors:
+                st.warning(e)
