@@ -239,6 +239,13 @@ def main():
     print("=" * 65)
     print("    FOUR-BAR MECHANISM — Kinematic Analysis")
     print("=" * 65)
+    print("\n  Inputs required:")
+    print("    L1 — Fixed link length (ground)   [m]")
+    print("    L2 — Crank length                 [m]")
+    print("    L3 — Coupler length               [m]")
+    print("    L4 — Follower length              [m]")
+    print("    ω₂ — Crank angular velocity       [rad/s]")
+    print("    θ₂ — Crank angle(s)")
 
     L1 = float(input("\n  Fixed link length   L1 (m): "))
     L2 = float(input("  Crank length        L2 (m): "))
@@ -252,31 +259,46 @@ def main():
     mode_raw = input("  Choice [1/2]: ").strip()
     assembly = -1 if mode_raw == "2" else +1
 
-    print("\n  Enter crank angles θ₂ (degrees).")
+    print("\n  Angle unit:")
+    print("    1 → Degrees  (default)")
+    print("    2 → Radians")
+    unit_raw = input("  Choice [1/2]: ").strip()
+    use_radians = (unit_raw == "2")
+    unit_label  = "rad" if use_radians else "°"
+
+    print(f"\n  Enter crank angles θ₂ ({unit_label}).")
     print("  Options:")
-    print("    • Range  →  start end step   (e.g.  0 360 5)")
+    print("    • Range  →  start end step   (e.g.  0 360 5  or  0 6.28 0.1)")
     print("    • List   →  v1 v2 v3 …       (e.g.  30 60 90 120)")
     raw = input("  Input: ").split()
 
     if len(raw) == 3:
         try:
             start, end, step = map(float, raw)
-            thetas = np.arange(start, end + 1e-9, step)
+            thetas_input = np.arange(start, end + 1e-9, step)
         except ValueError:
-            thetas = list(map(float, raw))
+            thetas_input = list(map(float, raw))
     else:
-        thetas = list(map(float, raw))
+        thetas_input = list(map(float, raw))
+
+    # Convert to degrees for internal computation
+    if use_radians:
+        thetas_deg     = [np.degrees(t) for t in thetas_input]
+        thetas_display = list(thetas_input)
+    else:
+        thetas_deg     = list(thetas_input)
+        thetas_display = list(thetas_input)
 
     # ── Compute ───────────────────────────────
     results, errors = [], []
-    for t in thetas:
+    for t_deg, t_disp in zip(thetas_deg, thetas_display):
         try:
             t3, t4, w3, w4, a3, a4 = four_bar_kinematics(
-                L1, L2, L3, L4, omega2, t, assembly
+                L1, L2, L3, L4, omega2, t_deg, assembly
             )
-            results.append((t, t3, t4, w3, w4, a3, a4))
+            results.append((t_disp, t3, t4, w3, w4, a3, a4))
         except (ValueError, np.linalg.LinAlgError) as e:
-            errors.append(f"θ₂={t}°: {e}")
+            errors.append(f"θ₂={t_disp} {unit_label}: {e}")
 
     if errors:
         print("\n  ⚠  Warnings (skipped angles):")
@@ -296,23 +318,45 @@ def main():
 
     # ── Display ───────────────────────────────
     print("\n  RESULTS")
-    print_table(results)
+    ang_unit = unit_label
+    hdr = (
+        f"{'θ₂ ('+ang_unit+')':>10} | {'θ₃ (°)':>8} | {'θ₄ (°)':>8} | "
+        f"{'ω₃ (rad/s)':>12} | {'ω₄ (rad/s)':>12} | "
+        f"{'α₃ (rad/s²)':>13} | {'α₄ (rad/s²)':>13}"
+    )
+    sep = "─" * len(hdr)
+    print(sep); print(hdr); print(sep)
+    for row in results:
+        t2, t3, t4, w3, w4, a3, a4 = row
+        print(
+            f"{t2:>10.4f} | {t3:>8.3f} | {t4:>8.3f} | "
+            f"{w3:>12.4f} | {w4:>12.4f} | "
+            f"{a3:>13.4f} | {a4:>13.4f}"
+        )
+    print(sep)
 
-    print("\n  Column key:")
-    print("    θ₂ — crank angle (input)             [°]")
-    print("    θ₃ — coupler angle (position result)  [°]")
-    print("    θ₄ — follower angle (position result) [°]")
-    print("    ω₃ — angular velocity of coupler      [rad/s]")
-    print("    ω₄ — angular velocity of follower     [rad/s]")
-    print("    α₃ — angular acceleration of coupler  [rad/s²]")
-    print("    α₄ — angular acceleration of follower [rad/s²]")
+    print(f"\n  Column key (OUTPUTS):")
+    print(f"    θ₂ — crank angle (input)                          [{ang_unit}]")
+    print(f"    θ₃ — coupler angle (position)                     [°]")
+    print(f"    θ₄ — follower angle (position)                    [°]")
+    print(f"    ω₃ — angular velocity of coupler link             [rad/s]")
+    print(f"    ω₄ — angular velocity of follower link            [rad/s]")
+    print(f"    α₃ — angular acceleration of coupler link         [rad/s²]")
+    print(f"    α₄ — angular acceleration of follower link        [rad/s²]")
 
     # ── Plot ──────────────────────────────────
     if len(results) > 1:
         do_plot = input("\n  Generate plots? (y/n): ").strip().lower()
         if do_plot == "y":
-            plot_results(L1, L2, L3, L4, omega2, results)
+            # plot_results needs (t2_deg, t3, t4, w3, w4, a3, a4)
+            results_for_plot = []
+            for row in results:
+                t2_disp, t3, t4, w3, w4, a3, a4 = row
+                t2_deg = np.degrees(t2_disp) if use_radians else t2_disp
+                results_for_plot.append((t2_deg, t3, t4, w3, w4, a3, a4))
+            plot_results(L1, L2, L3, L4, omega2, results_for_plot)
 
 
 if __name__ == "__main__":
     main()
+

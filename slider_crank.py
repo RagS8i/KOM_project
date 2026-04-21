@@ -147,33 +147,55 @@ def main():
     print("=" * 60)
     print("    SLIDER-CRANK MECHANISM — Kinematic Analysis")
     print("=" * 60)
+    print("\n  Inputs required:")
+    print("    r  — Crank length (m)")
+    print("    l  — Connecting-rod length (m)")
+    print("    ω  — Crank angular velocity (rad/s)")
+    print("    θ  — Crank angle(s)")
 
     # ── Inputs ────────────────────────────────
     r     = float(input("\n  Crank length r (m)              : "))
     l     = float(input("  Connecting-rod length l (m)     : "))
     omega = float(input("  Crank angular velocity ω (rad/s): "))
 
-    print("\n  Enter crank angles θ (degrees).")
+    print("\n  Angle unit:")
+    print("    1 → Degrees  (default)")
+    print("    2 → Radians")
+    unit_raw = input("  Choice [1/2]: ").strip()
+    use_radians = (unit_raw == "2")
+    unit_label  = "rad" if use_radians else "°"
+
+    print(f"\n  Enter crank angles θ ({unit_label}).")
     print("  Options:")
-    print("    • Range  →  start end step   (e.g.  0 360 10)")
+    print("    • Range  →  start end step   (e.g.  0 360 10  or  0 6.28 0.1)")
     print("    • List   →  v1 v2 v3 …       (e.g.  0 90 180 270)")
     raw = input("  Input: ").split()
 
     if len(raw) == 3:
         try:
             start, end, step = map(float, raw)
-            thetas = np.arange(start, end + 1e-9, step)
+            thetas_input = np.arange(start, end + 1e-9, step)
         except ValueError:
-            thetas = list(map(float, raw))
+            thetas_input = list(map(float, raw))
     else:
-        thetas = list(map(float, raw))
+        thetas_input = list(map(float, raw))
+
+    # Convert to degrees internally
+    if use_radians:
+        thetas_deg = [np.degrees(t) for t in thetas_input]
+        thetas_display = list(thetas_input)   # keep original for display
+    else:
+        thetas_deg     = list(thetas_input)
+        thetas_display = list(thetas_input)
 
     # ── Compute ───────────────────────────────
     results, errors = [], []
-    for t in thetas:
+    for t_deg, t_disp in zip(thetas_deg, thetas_display):
         try:
-            phi, w2, a2, vs, as_ = slider_crank_kinematics(r, l, omega, t)
-            results.append((t, phi, w2, a2, vs, as_))
+            phi, w2, a2, vs, as_ = slider_crank_kinematics(r, l, omega, t_deg)
+            # Store display angle (original unit) + results
+            phi_disp = np.radians(phi) if use_radians else phi
+            results.append((t_disp, phi_disp, w2, a2, vs, as_))
         except ValueError as e:
             errors.append(str(e))
 
@@ -188,21 +210,45 @@ def main():
 
     # ── Display ───────────────────────────────
     print("\n  RESULTS")
-    print_table(results)
+    arr = np.array(results)
+    ang_unit = "rad" if use_radians else "°"
+    header = (
+        f"{'θ ('+ang_unit+')':>10} | {'φ ('+ang_unit+')':>10} | "
+        f"{'ω₂ (rad/s)':>12} | {'α₂ (rad/s²)':>13} | "
+        f"{'vₛ (m/s)':>10} | {'aₛ (m/s²)':>11}"
+    )
+    sep = "─" * len(header)
+    print(sep); print(header); print(sep)
+    for row in results:
+        theta, phi, w2, a2, vs, as_ = row
+        print(
+            f"{theta:>10.4f} | {phi:>10.4f} | "
+            f"{w2:>12.4f} | {a2:>13.4f} | "
+            f"{vs:>10.4f} | {as_:>11.4f}"
+        )
+    print(sep)
 
-    print("\n  Column key:")
-    print("    θ  — crank angle (input)")
-    print("    φ  — connecting-rod angle (position result)")
-    print("    ω₂ — angular velocity of connecting rod  [rad/s]")
-    print("    α₂ — angular acceleration of connecting rod [rad/s²]")
-    print("    vₛ — velocity of slider  [m/s]")
-    print("    aₛ — acceleration of slider  [m/s²]")
+    print(f"\n  Column key:")
+    print(f"    θ  — crank angle (input)                      [{ang_unit}]")
+    print(f"    φ  — connecting-rod angle                     [{ang_unit}]")
+    print(f"    ω₂ — angular velocity of connecting rod       [rad/s]")
+    print(f"    α₂ — angular acceleration of connecting rod   [rad/s²]")
+    print(f"    vₛ — velocity of slider                       [m/s]")
+    print(f"    aₛ — acceleration of slider                   [m/s²]")
 
     # ── Plot ──────────────────────────────────
     if len(results) > 1:
+        # plot_results uses degree-based thetas internally
+        results_deg = []
+        if use_radians:
+            for row in results:
+                results_deg.append((np.degrees(row[0]), np.degrees(row[1]),
+                                    row[2], row[3], row[4], row[5]))
+        else:
+            results_deg = results
         do_plot = input("\n  Generate plots? (y/n): ").strip().lower()
         if do_plot == "y":
-            plot_results(r, l, omega, results)
+            plot_results(r, l, omega, results_deg)
 
 
 if __name__ == "__main__":
